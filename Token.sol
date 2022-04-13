@@ -2,7 +2,6 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 interface IERC20 {
-
     function totalSupply() external view returns (uint256);
     function balanceOf(address account) external view returns (uint256);
     function allowance(address owner, address spender) external view returns (uint256);
@@ -10,7 +9,6 @@ interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
     function approve(address spender, uint256 amount) external returns (bool);
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
-
 
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
@@ -28,11 +26,11 @@ contract ErcToken is IERC20 {
 
     uint256 private _totalSupply;
 
-    constructor (string memory token_name, string memory token_symbol, int memory total) public {
+  constructor (string memory token_name, string memory token_symbol, uint256 total) {
     _name = token_name;
     _symbol = token_symbol;
     _decimals = 18;
-    _totalSupply = total;
+    _totalSupply = total * (10**18);
     _balances[msg.sender] = _totalSupply;
   }
 
@@ -57,7 +55,7 @@ contract ErcToken is IERC20 {
   }
 
   function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
-    _transfer(_msgSender(), recipient, amount);
+    _transfer(msg.sender, recipient, amount);
     return true;
   }
 
@@ -66,14 +64,14 @@ contract ErcToken is IERC20 {
   }
 
   function approve(address spender, uint256 amount) public virtual override returns (bool) {
-    _approve(_msgSender(), spender, amount);
+    _approve(msg.sender, spender, amount);
     return true;
   }
 
    function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
       _transfer(sender, recipient, amount);
-      _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount,
-      "ERC20: transfer amount exceeds allowance"));
+      uint256 _remainingAlowance = _allowances[sender][msg.sender].sub(amount);
+      _approve(sender, msg.sender, _remainingAlowance);
       return true;
     }
 
@@ -82,10 +80,8 @@ contract ErcToken is IERC20 {
           address to,
           uint256 amount
       ) internal virtual {
-          require(from != address(0), "ERC20: transfer from the zero address");
-          require(to != address(0), "ERC20: transfer to the zero address");
-
-          _beforeTokenTransfer(from, to, amount);
+          require(from != address(0), "ERC20: you cannot transfer from zero address");
+          require(to != address(0), "ERC20: you cannot transfer to zero address");
 
           uint256 fromBalance = _balances[from];
           require(fromBalance >= amount, "ERC20: transfer amount exceeds balance");
@@ -95,8 +91,6 @@ contract ErcToken is IERC20 {
           _balances[to] += amount;
 
           emit Transfer(from, to, amount);
-
-          _afterTokenTransfer(from, to, amount);
     }
 
       function _approve(
